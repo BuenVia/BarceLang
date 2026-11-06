@@ -23,7 +23,7 @@ class Course(
     val language: Language,
     val lessons: List<Lesson>,
 ) {
-    val sentences: Set<String> = lessons.flatMap { it.exercises }.map { it.answer }.toSet()
+    val exerciseIds: Set<String> = lessons.flatMap { it.exercises }.map { it.id }.toSet()
 }
 
 /** The choices on the opening screen, in the order they're shown. */

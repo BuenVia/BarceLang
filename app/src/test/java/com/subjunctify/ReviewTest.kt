@@ -12,8 +12,8 @@ import java.time.ZonedDateTime
 class ReviewTest {
     private val zone = ZoneId.of("Europe/Madrid")
     private val evening = ZonedDateTime.of(2026, 11, 5, 21, 0, 0, 0, zone).toInstant()
-    private val sentence = sentences.keys.first()
-    private val newCard = ReviewCard(sentence, Mode.TRANSLATE)
+    private val exerciseId = exercisesById.keys.first()
+    private val newCard = ReviewCard(exerciseId, Mode.TRANSLATE)
 
     private fun startOfDay(year: Int, month: Int, day: Int) =
         ZonedDateTime.of(year, month, day, 0, 0, 0, 0, zone).toInstant().toEpochMilli()
@@ -52,7 +52,7 @@ class ReviewTest {
 
     @Test
     fun failingBringsTheCardBackSoonAndRestartsIt() {
-        val learned = ReviewCard(sentence, Mode.TRANSLATE, repetitions = 4, intervalDays = 20)
+        val learned = ReviewCard(exerciseId,Mode.TRANSLATE, repetitions = 4, intervalDays = 20)
         val failed = learned.afterAnswer(false, evening, zone)
         assertEquals(0, failed.repetitions)
         assertEquals(evening.plus(Duration.ofMinutes(10)).toEpochMilli(), failed.dueAt)
@@ -65,7 +65,7 @@ class ReviewTest {
     @Test
     fun onlyLapsesLowerEaseAndNeverBelowTheMinimum() {
         assertEquals(2.5, newCard.afterAnswer(false, evening, zone).ease, 0.001)
-        val hard = ReviewCard(sentence, Mode.TRANSLATE, repetitions = 2, ease = 1.4)
+        val hard = ReviewCard(exerciseId,Mode.TRANSLATE, repetitions = 2, ease = 1.4)
         assertEquals(1.3, hard.afterAnswer(false, evening, zone).ease, 0.001)
     }
 
@@ -79,8 +79,8 @@ class ReviewTest {
     @Test
     fun dueCardsAreSeparatedByMode() {
         val cards = listOf(
-            ReviewCard(sentence, Mode.TRANSLATE, dueAt = evening.toEpochMilli()),
-            ReviewCard(sentence, Mode.LISTEN, dueAt = evening.plusSeconds(1).toEpochMilli()),
+            ReviewCard(exerciseId,Mode.TRANSLATE, dueAt = evening.toEpochMilli()),
+            ReviewCard(exerciseId,Mode.LISTEN, dueAt = evening.plusSeconds(1).toEpochMilli()),
         )
         assertEquals(1, cards.due(Mode.TRANSLATE, evening).size)
         assertEquals(0, cards.due(Mode.LISTEN, evening).size)
@@ -89,15 +89,15 @@ class ReviewTest {
 
     @Test
     fun sessionTakesTheLongestWaitingCardsUpToTheLimit() {
-        val cards = sentences.keys.mapIndexed { index, it ->
+        val cards = exercisesById.keys.mapIndexed { index, it ->
             ReviewCard(it, Mode.TRANSLATE, dueAt = index.toLong())
         }
-        assertEquals(sentences.keys.take(20).toSet(), cards.nextSession(Mode.TRANSLATE, evening).toSet())
+        assertEquals(exercisesById.keys.take(20).toSet(), cards.nextSession(Mode.TRANSLATE, evening).toSet())
     }
 
     @Test
     fun cardsNoLongerInTheCourseAreIgnored() {
-        val removed = listOf(ReviewCard("Una frase borrada.", Mode.TRANSLATE))
+        val removed = listOf(ReviewCard("es-b2-removed", Mode.TRANSLATE))
         for (course in courses) assertTrue(removed.inCourse(course).isEmpty())
         assertNull(emptyList<ReviewCard>().nextReview(evening, zone))
     }
@@ -105,24 +105,26 @@ class ReviewTest {
     @Test
     fun nextReviewIsDescribedInCalendarDays() {
         fun describe(dueAt: Long) =
-            listOf(ReviewCard(sentence, Mode.TRANSLATE, dueAt = dueAt)).nextReview(evening, zone)
+            listOf(ReviewCard(exerciseId,Mode.TRANSLATE, dueAt = dueAt)).nextReview(evening, zone)
         assertEquals("later today", describe(evening.plus(Duration.ofMinutes(10)).toEpochMilli()))
         assertEquals("tomorrow", describe(startOfDay(2026, 11, 6)))
         assertEquals("in 3 days", describe(startOfDay(2026, 11, 8)))
     }
 
     @Test
-    fun differentSentencesNeverShareACard() {
+    fun everyExerciseHasItsOwnWellFormedId() {
         val exercises = courses.flatMap { it.lessons }.flatMap { it.exercises }.distinct()
-        val duplicates = exercises.groupBy { it.answer }.filterValues { it.size > 1 }.keys
+        val duplicates = exercises.groupBy { it.id }.filterValues { it.size > 1 }.keys
         assertEquals(emptySet<String>(), duplicates)
+        val format = Regex("""(es-subj|es-b2|ca-a1)-\d{3,}""")
+        for (exercise in exercises) assertTrue(exercise.id, format.matches(exercise.id))
     }
 
     @Test
     fun reviewsStayInsideTheirCourse() {
         val catalan = courses.first { it.language == Language.CATALAN }
         val spanish = courses.first { it.title == "Spanish grammar" }
-        val card = ReviewCard(catalan.lessons.first().exercises.first().answer, Mode.TRANSLATE)
+        val card = ReviewCard(catalan.lessons.first().exercises.first().id, Mode.TRANSLATE)
         assertEquals(listOf(card), listOf(card).inCourse(catalan))
         assertTrue(listOf(card).inCourse(spanish).isEmpty())
     }
@@ -132,7 +134,7 @@ class ReviewTest {
         val subjunctive = courses.first { it.title == "The Spanish subjunctive" }
         val spanish = courses.first { it.title == "Spanish grammar" }
         val shared = spanish.lessons.first { it.title == "Imperfecto de subjuntivo" }
-        val card = ReviewCard(shared.exercises.first().answer, Mode.TRANSLATE)
+        val card = ReviewCard(shared.exercises.first().id, Mode.TRANSLATE)
         assertEquals(listOf(card), listOf(card).inCourse(subjunctive))
         assertEquals(listOf(card), listOf(card).inCourse(spanish))
     }

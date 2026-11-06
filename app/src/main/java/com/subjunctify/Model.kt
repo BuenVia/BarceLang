@@ -17,12 +17,15 @@ class Lesson(
 /**
  * One practice sentence.
  *
+ * [id] is what saved review progress refers to, so the wording can be corrected freely. Never change
+ * or reuse an ID, even after deleting its exercise: a new exercise takes the next unused number.
+ *
  * [pattern] holds the sentence in the language being taught, with `{a|b}` marking interchangeable wording. The first option of
  * each group forms the model answer, which is what gets displayed and spoken, so `{|tú }vengas`
  * shows "vengas" but also accepts "tú vengas". [alsoAccepted] covers rewordings that groups can't
  * express, such as swapping the two clauses of a sentence.
  */
-class Exercise(val english: String, pattern: String, vararg alsoAccepted: String) {
+class Exercise(val id: String, val english: String, pattern: String, vararg alsoAccepted: String) {
     private val expanded = expand(pattern)
 
     val answer: String = expanded.first().capitalizeFirstLetter()

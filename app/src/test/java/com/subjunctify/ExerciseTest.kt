@@ -6,6 +6,7 @@ import org.junit.Test
 
 class ExerciseTest {
     private val exercise = Exercise(
+        "test",
         "I want you (tú) to come.",
         "{|yo }quiero que {|tú }{vengas|vinieras}.",
         "Que {|tú }vengas, {|yo }quiero.",
@@ -14,7 +15,7 @@ class ExerciseTest {
     @Test
     fun modelAnswerUsesFirstOptionsAndIsCapitalised() {
         assertEquals("Quiero que vengas.", exercise.answer)
-        assertEquals("¿Hay alguien?", Exercise("", "¿{hay|existe} alguien?").answer)
+        assertEquals("¿Hay alguien?", Exercise("test", "","¿{hay|existe} alguien?").answer)
     }
 
     @Test
@@ -36,7 +37,7 @@ class ExerciseTest {
 
     @Test
     fun decomposedUnicodeMatchesComposed() {
-        val tu = Exercise("", "tú")
+        val tu = Exercise("test", "","tú")
         assertEquals(Verdict.CORRECT, tu.check("tú", Mode.TRANSLATE))
     }
 
@@ -47,7 +48,7 @@ class ExerciseTest {
 
     @Test
     fun missingAccentIsIncorrectButFlagged() {
-        val hablo = Exercise("", "Ojalá hable.")
+        val hablo = Exercise("test", "","Ojalá hable.")
         assertEquals(Verdict.ACCENTS_ONLY, hablo.check("Ojala hable", Mode.TRANSLATE))
         assertEquals(Verdict.ACCENTS_ONLY, hablo.check("Ojalá hablé", Mode.TRANSLATE))
     }
@@ -61,7 +62,7 @@ class ExerciseTest {
 
     @Test
     fun geminateLCanBeTypedWithAFullStopOrHyphen() {
-        val exercise = Exercise("", "La Marta és intel·ligent.")
+        val exercise = Exercise("test", "","La Marta és intel·ligent.")
         for (typed in listOf("La Marta és intel·ligent", "la marta és intel.ligent", "La Marta és intel-ligent")) {
             assertEquals(typed, Verdict.CORRECT, exercise.check(typed, Mode.TRANSLATE))
         }
@@ -70,7 +71,7 @@ class ExerciseTest {
 
     @Test
     fun cedillaCountsAsAnAccent() {
-        val exercise = Exercise("", "Vaig a la plaça.")
+        val exercise = Exercise("test", "","Vaig a la plaça.")
         assertEquals(Verdict.ACCENTS_ONLY, exercise.check("Vaig a la placa", Mode.TRANSLATE))
     }
 

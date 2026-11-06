@@ -19,22 +19,22 @@ private const val MAXIMUM_SESSION_SIZE = 20
 private val RETRY_DELAY: Duration = Duration.ofMinutes(10)
 
 /**
- * Every sentence in the app by its model answer, which is what [ReviewCard.sentence] stores. A lesson
- * can belong to more than one course, and its sentences then share one schedule across them.
+ * Every sentence in the app by its ID, which is what [ReviewCard.exerciseId] stores. A lesson can
+ * belong to more than one course, and its sentences then share one schedule across them.
  */
-val sentences: Map<String, Exercise> =
-    courses.flatMap { it.lessons }.flatMap { it.exercises }.associateBy { it.answer }
+val exercisesById: Map<String, Exercise> =
+    courses.flatMap { it.lessons }.flatMap { it.exercises }.associateBy { it.id }
 
 /**
  * The schedule for one sentence in one mode: recognising a sentence by ear doesn't mean you can
  * produce it, so the two are remembered separately.
  *
- * Cards are keyed on the model answer, so rewording one in a lesson restarts its schedule. Cards
- * for sentences no longer in a course stay in the database but are ignored.
+ * Cards are keyed on the exercise's ID, so rewording a sentence keeps its schedule. Cards for
+ * sentences no longer in a course stay in the database but are ignored.
  */
-@Entity(tableName = "review_card", primaryKeys = ["sentence", "mode"])
+@Entity(tableName = "review_card", primaryKeys = ["exerciseId", "mode"])
 data class ReviewCard(
-    val sentence: String,
+    val exerciseId: String,
     val mode: Mode,
     val repetitions: Int = 0,
     val intervalDays: Int = 0,
@@ -76,14 +76,14 @@ data class ReviewCard(
 }
 
 fun List<ReviewCard>.inCourse(course: Course): List<ReviewCard> =
-    filter { it.sentence in course.sentences }
+    filter { it.exerciseId in course.exerciseIds }
 
 fun List<ReviewCard>.due(mode: Mode, now: Instant): List<ReviewCard> =
     filter { it.mode == mode && it.dueAt <= now.toEpochMilli() }
 
 /** The longest-waiting due sentences, shuffled so that neighbours in a lesson don't cue each other. */
 fun List<ReviewCard>.nextSession(mode: Mode, now: Instant): List<String> =
-    due(mode, now).sortedBy { it.dueAt }.take(MAXIMUM_SESSION_SIZE).map { it.sentence }.shuffled()
+    due(mode, now).sortedBy { it.dueAt }.take(MAXIMUM_SESSION_SIZE).map { it.exerciseId }.shuffled()
 
 /** When the next card falls due, as in "tomorrow". Null when there are no cards. */
 fun List<ReviewCard>.nextReview(now: Instant, zone: ZoneId): String? {

@@ -120,7 +120,7 @@ private fun App() {
     val context = LocalContext.current
     val store = remember { ReviewStore.get(context) }
     val onAnswered = { exercise: Exercise, answeredIn: Mode, passed: Boolean ->
-        store.recordAnswer(exercise.answer, answeredIn, passed)
+        store.recordAnswer(exercise.id, answeredIn, passed)
     }
 
     val course = courseIndex?.let { courses[it] }
@@ -135,7 +135,7 @@ private fun App() {
     when {
         queue != null && activeMode != null -> PracticeScreen(
             title = "Review",
-            exercises = remember(queue) { queue.mapNotNull(sentences::get) },
+            exercises = remember(queue) { queue.mapNotNull(exercisesById::get) },
             language = course.language,
             mode = activeMode,
             onAnswered = onAnswered,
@@ -151,9 +151,9 @@ private fun App() {
             cards = store.cards,
             onBack = { courseIndex = null },
             onOpen = { lessonIndex = it },
-            onReview = { reviewMode, sentencesToReview ->
+            onReview = { reviewMode, exerciseIds ->
                 mode = reviewMode
-                reviewQueue = ArrayList(sentencesToReview)
+                reviewQueue = ArrayList(exerciseIds)
             },
         )
         activeMode == null -> LessonScreen(
