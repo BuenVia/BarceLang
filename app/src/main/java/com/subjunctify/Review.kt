@@ -75,6 +75,20 @@ data class ReviewCard(
     }
 }
 
+/** The first time every sentence of a lesson was answered in one mode. Later rounds don't change it. */
+@Entity(tableName = "lesson_round", primaryKeys = ["lessonId", "mode"])
+data class LessonRound(val lessonId: String, val mode: Mode, val completedAt: Long)
+
+/** When each started lesson became started: the moment it had a finished round in every mode. */
+fun List<LessonRound>.lessonStartTimes(): Map<String, Instant> =
+    groupBy { it.lessonId }
+        .filterValues { rounds -> rounds.map { it.mode }.toSet().size == Mode.entries.size }
+        .mapValues { (_, rounds) -> Instant.ofEpochMilli(rounds.maxOf { it.completedAt }) }
+
+/** A course's lessons that are finished enough to draw mixed practice from, in teaching order. */
+fun Course.completedLessons(startTimes: Map<String, Instant>): List<Lesson> =
+    lessons.filter { it.id in startTimes }
+
 fun List<ReviewCard>.inCourse(course: Course): List<ReviewCard> =
     filter { it.exerciseId in course.exerciseIds }
 

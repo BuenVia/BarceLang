@@ -15,11 +15,12 @@ private fun ex(id: String, english: String, pattern: String, vararg alsoAccepted
 /** A subject taught in the subjunctive course too. Sharing it means progress carries across. */
 private fun fromSubjunctiveCourse(title: String): Lesson {
     val lesson = subjunctiveLessons.first { it.title == title }
-    return Lesson(lesson.title, lesson.level, lesson.explanation, lesson.exercises, SUBJUNCTIVE)
+    return Lesson(lesson.id, lesson.title, lesson.level, lesson.explanation, lesson.exercises, SUBJUNCTIVE)
 }
 
 val spanishB2Lessons: List<Lesson> = listOf(
     Lesson(
+        id = "es-b2-lesson-01",
         title = "Explaining what you can do",
         level = "B2",
         category = FUNCTIONAL,
@@ -60,6 +61,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-02",
         title = "Reviewing past tenses",
         level = "B2",
         category = PAST,
@@ -105,6 +107,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-03",
         title = "Pretérito imperfecto",
         level = "B2",
         category = PAST,
@@ -151,6 +154,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-04",
         title = "Making recommendations",
         level = "B2",
         category = DISCOURSE,
@@ -197,6 +201,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
     fromSubjunctiveCourse("Evaluations with the subjuntivo"),
     fromSubjunctiveCourse("Imperfecto de subjuntivo"),
     Lesson(
+        id = "es-b2-lesson-05",
         title = "The infinitivo and the gerundio",
         level = "B2",
         category = FUNCTIONAL,
@@ -244,6 +249,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-06",
         title = "Expressing unlikely conditions",
         level = "B2",
         category = DISCOURSE,
@@ -290,6 +296,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-07",
         title = "Expressing certainty and uncertainty",
         level = "B2",
         category = DISCOURSE,
@@ -336,6 +343,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-08",
         title = "Imperativo afirmativo + pronouns",
         level = "B2",
         category = IMPERATIVE,
@@ -386,6 +394,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-09",
         title = "Imperativo negativo + pronouns",
         level = "B2",
         category = IMPERATIVE,
@@ -435,6 +444,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-10",
         title = "Expressing conditions",
         level = "B2",
         category = DISCOURSE,
@@ -479,6 +489,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-11",
         title = "Expressing purpose",
         level = "B2",
         category = DISCOURSE,
@@ -523,6 +534,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-12",
         title = "Expressing unlikely wishes",
         level = "B2",
         category = DISCOURSE,
@@ -569,6 +581,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-13",
         title = "“Antes de” and “después de”",
         level = "B2",
         category = "Adverbs",
@@ -617,6 +630,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-14",
         title = "Proposals and suggestions",
         level = "B2",
         category = FUNCTIONAL,
@@ -661,6 +675,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-15",
         title = "Commands and reported speech",
         level = "B2",
         category = DISCOURSE,
@@ -713,6 +728,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-16",
         title = "Futuro perfecto",
         level = "B2",
         category = "Verbs: Future",
@@ -764,6 +780,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-17",
         title = "Adjectives + Ser y Estar",
         level = "B2",
         category = "Verbs: Ser y Estar",
@@ -809,6 +826,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-18",
         title = "Consecutive sentences",
         level = "B2",
         category = DISCOURSE,
@@ -855,6 +873,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-19",
         title = "Relative clauses",
         level = "B2",
         category = "Referencing",
@@ -913,6 +932,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-20",
         title = "Concessive phrases",
         level = "B2",
         category = DISCOURSE,
@@ -959,6 +979,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-21",
         title = "Connectors: cause and effect",
         level = "B2",
         category = "Connectors",
@@ -1008,6 +1029,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-22",
         title = "Forming hypotheses and assumptions",
         level = "B2",
         category = DISCOURSE,
@@ -1051,6 +1073,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-23",
         title = "The passive voice",
         level = "B2",
         category = "Verbs: Passive",
@@ -1101,6 +1124,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-24",
         title = "Regretting decisions from the past",
         level = "B2",
         category = FUNCTIONAL,
@@ -1147,6 +1171,7 @@ val spanishB2Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-b2-lesson-25",
         title = "Hypothetical situations in the past",
         level = "B2",
         category = DISCOURSE,

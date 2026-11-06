@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "subjunctify"
+rootProject.name = "catlang"
 include(":app")

@@ -14,6 +14,7 @@ private fun ex(id: String, english: String, pattern: String, vararg alsoAccepted
 
 val catalanA1Lessons: List<Lesson> = listOf(
     Lesson(
+        id = "ca-a1-lesson-01",
         title = "Greetings and introductions",
         level = "A1",
         category = COMMUNICATION,
@@ -64,6 +65,7 @@ val catalanA1Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "ca-a1-lesson-02",
         title = "Ser and estar",
         level = "A1",
         category = BASIC_VERBS,
@@ -115,6 +117,7 @@ val catalanA1Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "ca-a1-lesson-03",
         title = "Articles and gender",
         level = "A1",
         category = NOUNS,
@@ -163,6 +166,7 @@ val catalanA1Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "ca-a1-lesson-04",
         title = "Plurals and adjectives",
         level = "A1",
         category = NOUNS,
@@ -212,6 +216,7 @@ val catalanA1Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "ca-a1-lesson-05",
         title = "Tenir and hi ha",
         level = "A1",
         category = BASIC_VERBS,
@@ -263,6 +268,7 @@ val catalanA1Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "ca-a1-lesson-06",
         title = "Present tense: -ar verbs",
         level = "A1",
         category = PRESENT,
@@ -313,6 +319,7 @@ val catalanA1Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "ca-a1-lesson-07",
         title = "Present tense: other verbs",
         level = "A1",
         category = PRESENT,
@@ -363,6 +370,7 @@ val catalanA1Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "ca-a1-lesson-08",
         title = "Anar, fer, voler and poder",
         level = "A1",
         category = BASIC_VERBS,
@@ -416,6 +424,7 @@ val catalanA1Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "ca-a1-lesson-09",
         title = "Numbers, days and the time",
         level = "A1",
         category = NUMBERS,
@@ -468,6 +477,7 @@ val catalanA1Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "ca-a1-lesson-10",
         title = "Asking questions",
         level = "A1",
         category = COMMUNICATION,
@@ -519,6 +529,7 @@ val catalanA1Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "ca-a1-lesson-11",
         title = "Family and possessives",
         level = "A1",
         category = NOUNS,
@@ -574,6 +585,7 @@ val catalanA1Lessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "ca-a1-lesson-12",
         title = "Agradar and negatives",
         level = "A1",
         category = COMMUNICATION,

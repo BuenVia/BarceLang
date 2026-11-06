@@ -3,6 +3,8 @@ package com.subjunctify
 import android.content.Context
 import androidx.room.Dao
 import androidx.room.Database
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -36,9 +38,20 @@ interface ReviewCardDao {
     }
 }
 
-@Database(entities = [ReviewCard::class], version = 2, exportSchema = false)
+@Dao
+interface LessonRoundDao {
+    @Query("SELECT * FROM lesson_round")
+    fun observeAll(): Flow<List<LessonRound>>
+
+    /** Ignores a repeat, so a lesson keeps the date of its first round in each mode. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun recordFirst(round: LessonRound)
+}
+
+@Database(entities = [ReviewCard::class, LessonRound::class], version = 3, exportSchema = false)
 abstract class ReviewDatabase : RoomDatabase() {
     abstract fun cards(): ReviewCardDao
+    abstract fun lessonRounds(): LessonRoundDao
 }
 
 /**
@@ -78,23 +91,45 @@ private val KEY_CARDS_BY_EXERCISE_ID = object : Migration(1, 2) {
     }
 }
 
+private val ADD_LESSON_ROUNDS = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE lesson_round (
+                lessonId TEXT NOT NULL,
+                mode TEXT NOT NULL,
+                completedAt INTEGER NOT NULL,
+                PRIMARY KEY(lessonId, mode)
+            )
+            """,
+        )
+    }
+}
+
 /** One per process, because an open database must outlive activities recreated by rotation. */
 class ReviewStore private constructor(context: Context) {
-    private val dao = Room
+    private val database = Room
         .databaseBuilder(context.applicationContext, ReviewDatabase::class.java, "reviews.db")
-        .addMigrations(KEY_CARDS_BY_EXERCISE_ID)
+        .addMigrations(KEY_CARDS_BY_EXERCISE_ID, ADD_LESSON_ROUNDS)
         .build()
-        .cards()
+    private val dao = database.cards()
+    private val roundDao = database.lessonRounds()
 
     // Not tied to a screen, so leaving straight after answering can't cancel the save.
     private val writes = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     val cards: Flow<List<ReviewCard>> = dao.observeAll()
+    val lessonRounds: Flow<List<LessonRound>> = roundDao.observeAll()
 
     fun recordAnswer(exerciseId: String, mode: Mode, passed: Boolean) {
         val now = Instant.now()
         val zone = ZoneId.systemDefault()
         writes.launch { dao.recordAnswer(exerciseId, mode, passed, now, zone) }
+    }
+
+    fun recordRoundFinished(lessonId: String, mode: Mode) {
+        val round = LessonRound(lessonId, mode, Instant.now().toEpochMilli())
+        writes.launch { roundDao.recordFirst(round) }
     }
 
     companion object {

@@ -1,7 +1,9 @@
 package com.subjunctify
 
+import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -29,7 +32,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -37,14 +43,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -54,9 +59,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -75,36 +80,51 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import kotlin.random.Random
+
+private const val MIXED_ROUND_SIZE = 15
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val preference = ThemePreference(this)
         setContent {
-            AppTheme { App() }
+            var choice by remember { mutableStateOf(preference.load()) }
+            val dark = choice ?: isSystemInDarkTheme()
+
+            // By default the system bars follow the device, which would hide their icons whenever
+            // the toggle disagrees with it.
+            DisposableEffect(dark) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        AndroidColor.TRANSPARENT,
+                        AndroidColor.TRANSPARENT,
+                    ) { dark },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        LIGHT_NAVIGATION_SCRIM,
+                        DARK_NAVIGATION_SCRIM,
+                    ) { dark },
+                )
+                onDispose {}
+            }
+
+            val theme = remember(dark) {
+                ThemeState(dark) {
+                    choice = !dark
+                    preference.save(!dark)
+                }
+            }
+            AppTheme(theme) { App() }
         }
     }
 }
 
-@Composable
-private fun AppTheme(content: @Composable () -> Unit) {
-    val colors = if (isSystemInDarkTheme()) {
-        darkColorScheme(
-            primary = Color(0xFFFFB59E),
-            onPrimary = Color(0xFF5B1A05),
-            primaryContainer = Color(0xFF7B2E14),
-            onPrimaryContainer = Color(0xFFFFDBD0),
-        )
-    } else {
-        lightColorScheme(
-            primary = Color(0xFF9C3D1F),
-            onPrimary = Color.White,
-            primaryContainer = Color(0xFFFFDBD0),
-            onPrimaryContainer = Color(0xFF3A0B00),
-        )
-    }
-    MaterialTheme(colorScheme = colors, content = content)
-}
+// The same scrims enableEdgeToEdge() uses by default. They only show on Android 9 and below.
+private val LIGHT_NAVIGATION_SCRIM = AndroidColor.argb(0xE6, 0xFF, 0xFF, 0xFF)
+private val DARK_NAVIGATION_SCRIM = AndroidColor.argb(0x80, 0x1B, 0x1B, 0x1B)
 
 /**
  * Navigation is just these values: no course = the course list, a review queue = reviewing, no
@@ -116,12 +136,16 @@ private fun App() {
     var lessonIndex by rememberSaveable { mutableStateOf<Int?>(null) }
     var mode by rememberSaveable { mutableStateOf<Mode?>(null) }
     var reviewQueue by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
+    var completedOpen by rememberSaveable { mutableStateOf(false) }
 
     val context = LocalContext.current
     val store = remember { ReviewStore.get(context) }
     val onAnswered = { exercise: Exercise, answeredIn: Mode, passed: Boolean ->
         store.recordAnswer(exercise.id, answeredIn, passed)
     }
+    // Collected here so returning to the lesson list doesn't briefly show every lesson as unstarted.
+    val lessonRounds by store.lessonRounds.collectAsState(initial = null)
+    val lessonStartTimes = remember(lessonRounds) { lessonRounds.orEmpty().lessonStartTimes() }
 
     val course = courseIndex?.let { courses[it] }
     if (course == null) {
@@ -146,9 +170,37 @@ private fun App() {
                 mode = null
             },
         )
+        // Rotation reloads the rounds. Waiting for them means a round in progress keeps its place,
+        // because its restored position would otherwise point into an empty list of sentences.
+        completedOpen && lessonRounds == null -> Unit
+        completedOpen -> {
+            val completed = remember(course, lessonStartTimes) { course.completedLessons(lessonStartTimes) }
+            if (activeMode == null) {
+                CompletedLessonsScreen(
+                    lessons = completed,
+                    language = course.language,
+                    onBack = { completedOpen = false },
+                    onPractise = { mode = it },
+                )
+            } else {
+                PracticeScreen(
+                    title = "Completed lessons",
+                    exercises = remember(completed) { completed.flatMap { it.exercises } },
+                    roundSize = MIXED_ROUND_SIZE,
+                    language = course.language,
+                    mode = activeMode,
+                    onAnswered = onAnswered,
+                    canRetry = true,
+                    exitLabel = "Back to sentences",
+                    onExit = { mode = null },
+                )
+            }
+        }
         lesson == null -> LessonListScreen(
             course = course,
             cards = store.cards,
+            lessonStartTimes = lessonStartTimes,
+            onOpenCompleted = { completedOpen = true },
             onBack = { courseIndex = null },
             onOpen = { lessonIndex = it },
             onReview = { reviewMode, exerciseIds ->
@@ -168,6 +220,7 @@ private fun App() {
             language = course.language,
             mode = activeMode,
             onAnswered = onAnswered,
+            onRoundFinished = { store.recordRoundFinished(lesson.id, activeMode) },
             canRetry = true,
             exitLabel = "Back to lesson",
             onExit = { mode = null },
@@ -206,6 +259,7 @@ private fun AppScaffold(
                 navigationIcon = {
                     if (onBack != null) TextButton(onClick = onBack) { Text("← Back") }
                 },
+                actions = { ThemeToggle() },
             )
         },
         bottomBar = bottomBar,
@@ -214,8 +268,19 @@ private fun AppScaffold(
 }
 
 @Composable
+private fun ThemeToggle() {
+    val theme = LocalThemeState.current
+    IconButton(onClick = theme.toggle) {
+        Icon(
+            painter = painterResource(if (theme.isDark) R.drawable.ic_light_mode else R.drawable.ic_dark_mode),
+            contentDescription = if (theme.isDark) "Switch to light mode" else "Switch to dark mode",
+        )
+    }
+}
+
+@Composable
 private fun CourseListScreen(onOpen: (Int) -> Unit) {
-    AppScaffold(title = "Subjunctify") { padding ->
+    AppScaffold(title = "CatLang") { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -260,6 +325,8 @@ private fun CourseListScreen(onOpen: (Int) -> Unit) {
 private fun LessonListScreen(
     course: Course,
     cards: Flow<List<ReviewCard>>,
+    lessonStartTimes: Map<String, Instant>,
+    onOpenCompleted: () -> Unit,
     onBack: () -> Unit,
     onOpen: (Int) -> Unit,
     onReview: (Mode, List<String>) -> Unit,
@@ -268,6 +335,11 @@ private fun LessonListScreen(
     AppScaffold(title = "${course.title} ${course.level}", onBack = onBack) { padding ->
         // Outside the list, so the panel growing when reviews fall due can't scroll the lessons.
         Column(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding() + 8.dp)) {
+            CompletedLessonsCard(
+                completedCount = course.completedLessons(lessonStartTimes).size,
+                onClick = onOpenCompleted,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            )
             loadedCards?.let {
                 ReviewPanel(
                     course = course,
@@ -287,16 +359,32 @@ private fun LessonListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 itemsIndexed(course.lessons) { index, lesson ->
-                    Card(Modifier.fillMaxWidth().clickable { onOpen(index) }) {
+                    val startedAt = lessonStartTimes[lesson.id]
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable { onOpen(index) },
+                        colors = if (startedAt == null) {
+                            CardDefaults.cardColors()
+                        } else {
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                            )
+                        },
+                    ) {
                         Row(
                             modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = lesson.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.weight(1f),
-                            )
+                            Column(Modifier.weight(1f)) {
+                                Text(lesson.title, style = MaterialTheme.typography.titleMedium)
+                                if (startedAt != null) {
+                                    Text(
+                                        text = "Started ${formatDate(startedAt)}",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.padding(top = 4.dp),
+                                    )
+                                }
+                            }
                             // Some category names are long, so they wrap beside the title.
                             Column(
                                 modifier = Modifier
@@ -314,7 +402,7 @@ private fun LessonListScreen(
                                 Text(
                                     text = lesson.level,
                                     style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = if (startedAt == null) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                                 )
                             }
                         }
@@ -324,6 +412,104 @@ private fun LessonListScreen(
         }
     }
 }
+
+@Composable
+private fun CompletedLessonsCard(completedCount: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Completed lessons", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = when (completedCount) {
+                        0 -> "None yet"
+                        1 -> "Mixed practice from 1 lesson"
+                        else -> "Mixed practice from $completedCount lessons"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Text("→", style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+@Composable
+private fun CompletedLessonsScreen(
+    lessons: List<Lesson>,
+    language: Language,
+    onBack: () -> Unit,
+    onPractise: (Mode) -> Unit,
+) {
+    AppScaffold(
+        title = "Completed lessons",
+        onBack = onBack,
+        bottomBar = {
+            if (lessons.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.navigationBarsPadding().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "Practise $MIXED_ROUND_SIZE random sentences",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    Button(onClick = { onPractise(Mode.TRANSLATE) }, Modifier.fillMaxWidth()) {
+                        Text("Read English, write ${language.displayName}")
+                    }
+                    OutlinedButton(onClick = { onPractise(Mode.LISTEN) }, Modifier.fillMaxWidth()) {
+                        Text("Hear ${language.displayName}, transcribe it")
+                    }
+                }
+            }
+        },
+    ) { padding ->
+        if (lessons.isEmpty()) {
+            Text(
+                text = "Finish a Reading round and a Hearing round of a lesson, " +
+                    "and its sentences will appear here.",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(padding).padding(16.dp),
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                for (lesson in lessons) {
+                    item(key = lesson.id) {
+                        Text(
+                            text = lesson.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+                    items(lesson.exercises, key = { it.id }) { exercise ->
+                        Column {
+                            Text(exercise.answer, fontWeight = FontWeight.Bold)
+                            Text(exercise.english, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** A date in the device's own format, such as "6 Nov 2026". */
+private fun formatDate(time: Instant): String =
+    time.atZone(ZoneId.systemDefault()).toLocalDate()
+        .format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
 
 @Composable
 private fun ReviewPanel(
@@ -451,9 +637,11 @@ private fun withBold(text: String): AnnotatedString = buildAnnotatedString {
 private fun PracticeScreen(
     title: String,
     exercises: List<Exercise>,
+    roundSize: Int = Int.MAX_VALUE,
     language: Language,
     mode: Mode,
     onAnswered: (Exercise, Mode, Boolean) -> Unit,
+    onRoundFinished: () -> Unit = {},
     canRetry: Boolean,
     exitLabel: String,
     onExit: () -> Unit,
@@ -463,7 +651,11 @@ private fun PracticeScreen(
     var answer by rememberSaveable { mutableStateOf("") }
     var verdict by rememberSaveable { mutableStateOf<Verdict?>(null) }
 
-    val total = exercises.size
+    // Saved as a seed so that rotating the screen keeps the order, and with it the place in the round.
+    var shuffleSeed by rememberSaveable { mutableLongStateOf(Random.nextLong()) }
+    val shuffled = remember(exercises, shuffleSeed) { exercises.shuffled(Random(shuffleSeed)).take(roundSize) }
+
+    val total = shuffled.size
     if (index == total) {
         ResultScreen(
             title = title,
@@ -473,6 +665,7 @@ private fun PracticeScreen(
                 {
                     index = 0
                     score = 0
+                    shuffleSeed = Random.nextLong()
                 }
             } else {
                 null
@@ -483,7 +676,7 @@ private fun PracticeScreen(
         return
     }
 
-    val exercise = exercises[index]
+    val exercise = shuffled[index]
     val focusManager = LocalFocusManager.current
     val focus = remember { FocusRequester() }
     val submit = {
@@ -492,6 +685,7 @@ private fun PracticeScreen(
             verdict = result
             if (result == Verdict.CORRECT) score++
             onAnswered(exercise, mode, result == Verdict.CORRECT)
+            if (index + 1 == total) onRoundFinished()
             focusManager.clearFocus()
         }
     }
@@ -615,17 +809,9 @@ private fun ListenPrompt(exercise: Exercise, language: Language, autoPlay: Boole
 @Composable
 private fun Feedback(verdict: Verdict, exercise: Exercise) {
     val isCorrect = verdict == Verdict.CORRECT
-    val dark = isSystemInDarkTheme()
-    val container = when {
-        !isCorrect -> MaterialTheme.colorScheme.errorContainer
-        dark -> Color(0xFF143D1E)
-        else -> Color(0xFFD8F0DC)
-    }
-    val content = when {
-        !isCorrect -> MaterialTheme.colorScheme.onErrorContainer
-        dark -> Color(0xFFBFEBC8)
-        else -> Color(0xFF0F4D1E)
-    }
+    val colors = MaterialTheme.colorScheme
+    val container = if (isCorrect) colors.tertiaryContainer else colors.errorContainer
+    val content = if (isCorrect) colors.onTertiaryContainer else colors.onErrorContainer
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = container, contentColor = content),

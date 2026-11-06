@@ -28,6 +28,42 @@ class ReviewTest {
     }
 
     @Test
+    fun aLessonWithOneModeFinishedIsNotStarted() {
+        val rounds = listOf(LessonRound("lesson", Mode.TRANSLATE, 1_000))
+        assertEquals(emptyMap<String, Instant>(), rounds.lessonStartTimes())
+    }
+
+    @Test
+    fun aLessonStartsWhenItsLastModeIsFinished() {
+        val rounds = listOf(
+            LessonRound("lesson", Mode.LISTEN, 2_000),
+            LessonRound("lesson", Mode.TRANSLATE, 1_000),
+            LessonRound("other", Mode.LISTEN, 3_000),
+        )
+        assertEquals(mapOf("lesson" to Instant.ofEpochMilli(2_000)), rounds.lessonStartTimes())
+    }
+
+    @Test
+    fun onlyStartedLessonsOfTheCourseAreCompleted() {
+        val catalan = courses.first { it.language == Language.CATALAN }
+        val second = catalan.lessons[1]
+        val startTimes = mapOf(second.id to evening, "another-course-lesson" to evening)
+        assertEquals(listOf(second), catalan.completedLessons(startTimes))
+    }
+
+    @Test
+    fun lessonIdsIdentifyOneLessonEach() {
+        val lessons = courses.flatMap { it.lessons }
+        for ((id, sameId) in lessons.groupBy { it.id }) {
+            assertEquals(id, 1, sameId.map { it.title }.toSet().size)
+        }
+        // The same subject in two courses shares its ID, so its progress carries across.
+        for ((title, sameTitle) in lessons.groupBy { it.title }) {
+            assertEquals(title, 1, sameTitle.map { it.id }.toSet().size)
+        }
+    }
+
+    @Test
     fun passingLengthensTheInterval() {
         assertEquals(listOf(1, 3, 8, 20, 50, 125, 313), passRepeatedly(newCard, 7))
     }

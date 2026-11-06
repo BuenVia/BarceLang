@@ -6,7 +6,9 @@ enum class Mode { TRANSLATE, LISTEN }
 
 enum class Verdict { CORRECT, ACCENTS_ONLY, WRONG }
 
+/** [id] is what saved progress refers to, so like [Exercise.id] it must never be changed or reused. */
 class Lesson(
+    val id: String,
     val title: String,
     val level: String,
     val explanation: String,

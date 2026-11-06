@@ -8,6 +8,7 @@ private fun ex(id: String, english: String, pattern: String, vararg alsoAccepted
 
 val subjunctiveLessons: List<Lesson> = listOf(
     Lesson(
+        id = "es-subj-lesson-01",
         title = "Presente de subjuntivo",
         level = "B1",
         explanation = """
@@ -60,6 +61,7 @@ val subjunctiveLessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-subj-lesson-02",
         title = "More on presente de subjuntivo",
         level = "B1",
         explanation = """
@@ -107,6 +109,7 @@ val subjunctiveLessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-subj-lesson-03",
         title = "Presente de subjuntivo for advice",
         level = "B1",
         explanation = """
@@ -152,6 +155,7 @@ val subjunctiveLessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-subj-lesson-04",
         title = "Subjunctive to express doubt",
         level = "B1",
         explanation = """
@@ -192,6 +196,7 @@ val subjunctiveLessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-subj-lesson-05",
         title = "Subjuntivo: irregular",
         level = "B1",
         explanation = """
@@ -242,6 +247,7 @@ val subjunctiveLessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-subj-lesson-06",
         title = "Present subjunctive",
         level = "B1",
         explanation = """
@@ -289,6 +295,7 @@ val subjunctiveLessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-subj-lesson-07",
         title = "Expanding on the subjunctive",
         level = "B2",
         explanation = """
@@ -340,6 +347,7 @@ val subjunctiveLessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-subj-lesson-08",
         title = "Evaluations with the subjuntivo",
         level = "B2",
         explanation = """
@@ -382,6 +390,7 @@ val subjunctiveLessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-subj-lesson-09",
         title = "Imperfecto de subjuntivo",
         level = "B2",
         explanation = """
@@ -432,6 +441,7 @@ val subjunctiveLessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-subj-lesson-10",
         title = "Pluscuamperfecto de subjuntivo",
         level = "B2",
         explanation = """
@@ -483,6 +493,7 @@ val subjunctiveLessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-subj-lesson-11",
         title = "Indicativo y subjuntivo",
         level = "B2",
         explanation = """
@@ -532,6 +543,7 @@ val subjunctiveLessons: List<Lesson> = listOf(
         ),
     ),
     Lesson(
+        id = "es-subj-lesson-12",
         title = "Giving opinions in the “indicativo” and “subjuntivo”",
         level = "C1",
         explanation = """
