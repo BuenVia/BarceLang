@@ -2,7 +2,8 @@ package com.subjunctify
 
 import java.text.Normalizer
 
-enum class Mode { TRANSLATE, LISTEN }
+/** How a sentence is practised: write it from English, transcribe it by ear, or say it from English. */
+enum class Mode { TRANSLATE, LISTEN, SPEAK }
 
 enum class Verdict { CORRECT, ACCENTS_ONLY, WRONG }
 
@@ -29,14 +30,17 @@ class Lesson(
  */
 class Exercise(val id: String, val english: String, pattern: String, vararg alsoAccepted: String) {
     private val expanded = expand(pattern)
+    private val wordings = expanded + alsoAccepted.flatMap(::expand)
 
     val answer: String = expanded.first().capitalizeFirstLetter()
 
-    private val translations: Set<String> =
-        (expanded + alsoAccepted.flatMap(::expand)).map(::normalize).toSet()
+    private val translations: Set<String> = wordings.map(::normalize).toSet()
+
+    private val spokenTranslations: Set<String> by lazy { wordings.map(::spoken).toSet() }
 
     /** Translating accepts any listed wording; transcribing must match what was actually said. */
     fun check(typed: String, mode: Mode): Verdict {
+        if (mode == Mode.SPEAK) return checkSpoken(listOf(typed))
         val accepted = if (mode == Mode.TRANSLATE) translations else setOf(normalize(answer))
         val given = normalize(typed)
         return when {
@@ -45,6 +49,14 @@ class Exercise(val id: String, val english: String, pattern: String, vararg also
             else -> Verdict.WRONG
         }
     }
+
+    /**
+     * [heard] is the recogniser's guesses at one attempt, best first. Any listed wording passes, as
+     * when translating, and it's enough for one guess to match, since the recogniser often ranks the
+     * right sentence below a near miss. Speech has no spelling, so there's no [Verdict.ACCENTS_ONLY].
+     */
+    fun checkSpoken(heard: List<String>): Verdict =
+        if (heard.any { spoken(it) in spokenTranslations }) Verdict.CORRECT else Verdict.WRONG
 }
 
 private val optionGroup = Regex("""\{([^{}]*)\}""")
@@ -76,3 +88,57 @@ private fun normalize(text: String): String =
 
 private fun stripAccents(text: String): String =
     Normalizer.normalize(text, Normalizer.Form.NFD).replace(combiningMarks, "")
+
+/**
+ * Only what can be heard, as the recogniser writes it. Accents and the "·" go, because "si" and "sí"
+ * sound alike, and numbers become digits on both sides, because "les vuit" may come back as "les 8".
+ * That means a spoken "dos cases" passes for "dues cases": the recogniser would write "2" for either.
+ */
+private fun spoken(text: String): String =
+    numbersAsDigits(stripAccents(normalize(text.replace(onTheHour, "$1"))).replace("·", ""))
+
+/** "a las 8:00" is how recognisers often write "a las ocho". */
+private val onTheHour = Regex("""(\d)[:.]00\b""")
+
+/** Spanish and Catalan together, without accents. None of these means something else in the other. */
+private val numberWords: Map<String, Int> = mapOf(
+    "zero" to 0, "cero" to 0,
+    "dos" to 2, "dues" to 2, "tres" to 3, "quatre" to 4, "cuatro" to 4, "cinc" to 5, "cinco" to 5,
+    "sis" to 6, "seis" to 6, "set" to 7, "siete" to 7, "vuit" to 8, "ocho" to 8, "nou" to 9,
+    "nueve" to 9, "deu" to 10, "diez" to 10, "onze" to 11, "once" to 11, "dotze" to 12, "doce" to 12,
+    "tretze" to 13, "trece" to 13, "catorze" to 14, "catorce" to 14, "quinze" to 15, "quince" to 15,
+    "setze" to 16, "dieciseis" to 16, "disset" to 17, "diecisiete" to 17, "divuit" to 18,
+    "dieciocho" to 18, "dinou" to 19, "diecinueve" to 19,
+    "vint" to 20, "veinte" to 20, "veintiun" to 21, "veintiuno" to 21, "veintiuna" to 21,
+    "veintidos" to 22, "veintitres" to 23, "veinticuatro" to 24, "veinticinco" to 25,
+    "veintiseis" to 26, "veintisiete" to 27, "veintiocho" to 28, "veintinueve" to 29,
+    "trenta" to 30, "treinta" to 30, "quaranta" to 40, "cuarenta" to 40, "cinquanta" to 50,
+    "cincuenta" to 50, "seixanta" to 60, "sesenta" to 60, "setanta" to 70, "setenta" to 70,
+    "vuitanta" to 80, "ochenta" to 80, "noranta" to 90, "noventa" to 90, "cent" to 100, "cien" to 100,
+)
+
+/** "One" is also "a", so it only counts as a number after a ten, as in "trenta-un". */
+private val ones = setOf("u", "un", "una", "uno")
+private val tensJoiners = setOf("i", "y")
+
+private fun numbersAsDigits(text: String): String {
+    val words = text.split(' ').map { numberWords[it]?.toString() ?: it }
+    val result = mutableListOf<String>()
+    var i = 0
+    while (i < words.size) {
+        val tens = words[i].toIntOrNull()
+        if (tens != null && tens in 20..90 && tens % 10 == 0) {
+            var next = i + 1
+            if (words.getOrNull(next) in tensJoiners) next++
+            val unit = words.getOrNull(next)?.let { if (it in ones) 1 else it.toIntOrNull() }
+            if (unit != null && unit in 1..9) {
+                result += (tens + unit).toString()
+                i = next + 1
+                continue
+            }
+        }
+        result += words[i]
+        i++
+    }
+    return result.joinToString(" ")
+}

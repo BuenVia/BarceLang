@@ -76,6 +76,45 @@ class ExerciseTest {
     }
 
     @Test
+    fun speakingAcceptsAnyWordingButNotTheWrongWords() {
+        assertEquals(Verdict.CORRECT, exercise.check("Yo quiero que tú vinieras", Mode.SPEAK))
+        assertEquals(Verdict.WRONG, exercise.check("Quiero que vienes", Mode.SPEAK))
+    }
+
+    @Test
+    fun speakingIgnoresWhatCannotBeHeard() {
+        assertEquals(Verdict.CORRECT, Exercise("test", "", "Sí, té set.").check("si te set", Mode.SPEAK))
+        assertEquals(Verdict.CORRECT, Exercise("test", "", "Vaig a la plaça.").check("vaig a la placa", Mode.SPEAK))
+        assertEquals(Verdict.CORRECT, Exercise("test", "", "És intel·ligent.").check("és intelligent", Mode.SPEAK))
+    }
+
+    @Test
+    fun speakingPassesIfAnyGuessMatches() {
+        assertEquals(Verdict.CORRECT, exercise.checkSpoken(listOf("quiero que vienes", "quiero que vengas")))
+        assertEquals(Verdict.WRONG, exercise.checkSpoken(listOf("quiero que vienes", "quiero que viene")))
+        assertEquals(Verdict.WRONG, exercise.checkSpoken(emptyList()))
+    }
+
+    @Test
+    fun spokenNumbersMayComeBackAsDigits() {
+        val cases = mapOf(
+            "{|Jo }tinc trenta-un anys." to "Tinc 31 anys",
+            "{|Jo }tinc vint-i-dos anys." to "tinc 22 anys",
+            "Tengo treinta y un años." to "Tengo 31 años",
+            "Tengo veintidós años." to "tengo 22 años",
+            "Para las ocho habré terminado." to "Para las 8:00 habré terminado",
+            "Són dos quarts de quatre." to "Són 2 quarts de 4",
+            "{|Jo }tinc dues cases." to "Tinc 2 cases",
+        )
+        for ((pattern, heard) in cases) {
+            assertEquals(heard, Verdict.CORRECT, Exercise("test", "", pattern).check(heard, Mode.SPEAK))
+        }
+        assertEquals(Verdict.WRONG, Exercise("test", "", "Tinc trenta-un anys.").check("tinc 30 anys", Mode.SPEAK))
+        // "Un" is still an article, so it isn't turned into a number on its own.
+        assertEquals(Verdict.CORRECT, Exercise("test", "", "Vull un cafè.").check("vull un cafe", Mode.SPEAK))
+    }
+
+    @Test
     fun everyLessonHasFifteenDistinctSentencesAndNotes() {
         for (lesson in courses.flatMap { it.lessons }) {
             assertEquals(lesson.title, 15, lesson.exercises.size)
@@ -92,6 +131,7 @@ class ExerciseTest {
             assertFalse(answer, "  " in answer || answer != answer.trim())
             assertEquals(answer, Verdict.CORRECT, exercise.check(answer, Mode.TRANSLATE))
             assertEquals(answer, Verdict.CORRECT, exercise.check(answer, Mode.LISTEN))
+            assertEquals(answer, Verdict.CORRECT, exercise.check(answer, Mode.SPEAK))
         }
     }
 }

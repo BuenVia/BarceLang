@@ -1,12 +1,16 @@
 package com.subjunctify
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +33,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,12 +52,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -462,12 +469,7 @@ private fun CompletedLessonsScreen(
                         text = "Practise $MIXED_ROUND_SIZE random sentences",
                         style = MaterialTheme.typography.labelLarge,
                     )
-                    Button(onClick = { onPractise(Mode.TRANSLATE) }, Modifier.fillMaxWidth()) {
-                        Text("Read English, write ${language.displayName}")
-                    }
-                    OutlinedButton(onClick = { onPractise(Mode.LISTEN) }, Modifier.fillMaxWidth()) {
-                        Text("Hear ${language.displayName}, transcribe it")
-                    }
+                    PractiseButtons(language, onPractise)
                 }
             }
         },
@@ -521,7 +523,8 @@ private fun ReviewPanel(
     val now = currentTime()
     val translateDue = cards.due(Mode.TRANSLATE, now).size
     val listenDue = cards.due(Mode.LISTEN, now).size
-    val totalDue = translateDue + listenDue
+    val speakDue = cards.due(Mode.SPEAK, now).size
+    val totalDue = translateDue + listenDue + speakDue
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -546,6 +549,12 @@ private fun ReviewPanel(
                             onClick = { onReview(Mode.LISTEN, cards.nextSession(Mode.LISTEN, now)) },
                             modifier = Modifier.fillMaxWidth(),
                         ) { Text("Transcribe ${course.language.displayName} ($listenDue)") }
+                    }
+                    if (speakDue > 0) {
+                        OutlinedButton(
+                            onClick = { onReview(Mode.SPEAK, cards.nextSession(Mode.SPEAK, now)) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Speak ${course.language.displayName} ($speakDue)") }
                     }
                 }
                 cards.isNotEmpty() -> Text(
@@ -576,12 +585,7 @@ private fun LessonScreen(
                     text = "Practise ${lesson.exercises.size} sentences",
                     style = MaterialTheme.typography.labelLarge,
                 )
-                Button(onClick = { onPractise(Mode.TRANSLATE) }, Modifier.fillMaxWidth()) {
-                    Text("Read English, write ${language.displayName}")
-                }
-                OutlinedButton(onClick = { onPractise(Mode.LISTEN) }, Modifier.fillMaxWidth()) {
-                    Text("Hear ${language.displayName}, transcribe it")
-                }
+                PractiseButtons(language, onPractise)
             }
         },
     ) { padding ->
@@ -595,6 +599,24 @@ private fun LessonScreen(
             Text(lesson.title, style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(8.dp))
             Explanation(lesson.explanation)
+        }
+    }
+}
+
+/** One button per mode. Speaking is left out on devices that can't recognise speech. */
+@Composable
+private fun PractiseButtons(language: Language, onPractise: (Mode) -> Unit) {
+    val context = LocalContext.current
+    val canSpeak = remember { canRecognizeSpeech(context) }
+    Button(onClick = { onPractise(Mode.TRANSLATE) }, Modifier.fillMaxWidth()) {
+        Text("Read English, write ${language.displayName}")
+    }
+    OutlinedButton(onClick = { onPractise(Mode.LISTEN) }, Modifier.fillMaxWidth()) {
+        Text("Hear ${language.displayName}, transcribe it")
+    }
+    if (canSpeak) {
+        OutlinedButton(onClick = { onPractise(Mode.SPEAK) }, Modifier.fillMaxWidth()) {
+            Text("Read English, say it in ${language.displayName}")
         }
     }
 }
@@ -679,20 +701,40 @@ private fun PracticeScreen(
     val exercise = shuffled[index]
     val focusManager = LocalFocusManager.current
     val focus = remember { FocusRequester() }
+
+    // Created with the round rather than the feedback, so the voice is ready by the first answer.
+    val context = LocalContext.current
+    val speaker = if (mode == Mode.SPEAK) remember { Speaker(context, language) } else null
+    if (speaker != null) {
+        DisposableEffect(speaker) {
+            onDispose { speaker.shutdown() }
+        }
+    }
+    val grade = { result: Verdict ->
+        verdict = result
+        if (result == Verdict.CORRECT) score++
+        onAnswered(exercise, mode, result == Verdict.CORRECT)
+        if (index + 1 == total) onRoundFinished()
+    }
     val submit = {
         if (answer.isNotBlank() && verdict == null) {
-            val result = exercise.check(answer, mode)
-            verdict = result
-            if (result == Verdict.CORRECT) score++
-            onAnswered(exercise, mode, result == Verdict.CORRECT)
-            if (index + 1 == total) onRoundFinished()
+            grade(exercise.check(answer, mode))
             focusManager.clearFocus()
+        }
+    }
+    // Shows the guess that passed, or otherwise the recogniser's best one.
+    val submitSpoken = { heard: List<String> ->
+        if (verdict == null) {
+            val result = exercise.checkSpoken(heard)
+            answer = heard.firstOrNull { exercise.checkSpoken(listOf(it)) == Verdict.CORRECT } ?: heard.first()
+            grade(result)
         }
     }
 
     // Keyboard opens for each new question, unless the current one has already been answered.
+    // Speaking has no text field to focus.
     LaunchedEffect(index) {
-        if (verdict == null) focus.requestFocus()
+        if (verdict == null && mode != Mode.SPEAK) focus.requestFocus()
     }
 
     AppScaffold(title = title, onBack = onExit) { padding ->
@@ -715,9 +757,13 @@ private fun PracticeScreen(
             when (mode) {
                 Mode.TRANSLATE -> TranslatePrompt(exercise, language)
                 Mode.LISTEN -> ListenPrompt(exercise, language, autoPlay = verdict == null)
+                // A fresh listener for each sentence, so a problem with the last one doesn't linger.
+                Mode.SPEAK -> key(exercise.id) {
+                    SpeakPrompt(exercise, language, answered = verdict != null, onHeard = submitSpoken)
+                }
             }
 
-            OutlinedTextField(
+            if (mode != Mode.SPEAK) OutlinedTextField(
                 value = answer,
                 // The field wraps long sentences, so Enter would otherwise add a new line.
                 onValueChange = { if ('\n' in it) submit() else answer = it },
@@ -736,13 +782,13 @@ private fun PracticeScreen(
 
             val result = verdict
             if (result == null) {
-                Button(
+                if (mode != Mode.SPEAK) Button(
                     onClick = submit,
                     enabled = answer.isNotBlank(),
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("Submit") }
             } else {
-                Feedback(result, exercise)
+                Feedback(result, exercise, heard = answer.takeIf { mode == Mode.SPEAK }, speaker = speaker)
                 Button(
                     onClick = {
                         index++
@@ -807,7 +853,65 @@ private fun ListenPrompt(exercise: Exercise, language: Language, autoPlay: Boole
 }
 
 @Composable
-private fun Feedback(verdict: Verdict, exercise: Exercise) {
+private fun SpeakPrompt(exercise: Exercise, language: Language, answered: Boolean, onHeard: (List<String>) -> Unit) {
+    val context = LocalContext.current
+    val available = remember { canRecognizeSpeech(context) }
+    val currentOnHeard by rememberUpdatedState(onHeard)
+    val listener = remember { Listener(context, language) { currentOnHeard(it) } }
+    DisposableEffect(listener) {
+        onDispose { listener.shutdown() }
+    }
+
+    var permissionDenied by remember { mutableStateOf(false) }
+    val requestPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        permissionDenied = !granted
+        if (granted) listener.start()
+    }
+    val startListening = {
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            listener.start()
+        } else {
+            requestPermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Say it in ${language.displayName}", style = MaterialTheme.typography.labelMedium)
+            Text(exercise.english, style = MaterialTheme.typography.titleLarge)
+            when {
+                answered -> Unit
+                !available -> Text(
+                    "This device has no speech recognition service, so speaking exercises can't be marked.",
+                    color = MaterialTheme.colorScheme.error,
+                )
+                listener.isListening -> {
+                    Text(
+                        text = listener.partial.ifEmpty { "Listening…" },
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    OutlinedButton(onClick = listener::stop, Modifier.fillMaxWidth()) { Text("■ Done speaking") }
+                }
+                else -> {
+                    val problem = if (permissionDenied) {
+                        "CatLang needs microphone access to hear you. Allow it when asked, or in the app's settings."
+                    } else {
+                        listener.problem
+                    }
+                    problem?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    Button(onClick = startListening, Modifier.fillMaxWidth()) { Text("🎤 Speak") }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * [heard] is what the recogniser made of a spoken answer, shown so a miss can be understood. With a
+ * [speaker], the model answer can be played to compare with how it was said.
+ */
+@Composable
+private fun Feedback(verdict: Verdict, exercise: Exercise, heard: String? = null, speaker: Speaker? = null) {
     val isCorrect = verdict == Verdict.CORRECT
     val colors = MaterialTheme.colorScheme
     val container = if (isCorrect) colors.tertiaryContainer else colors.errorContainer
@@ -824,8 +928,18 @@ private fun Feedback(verdict: Verdict, exercise: Exercise) {
             if (verdict == Verdict.ACCENTS_ONLY) {
                 Text("Check your accents: only those are different.")
             }
+            if (heard != null) Text("Heard: “$heard”")
             Text(exercise.answer, fontWeight = FontWeight.Bold)
             Text(exercise.english)
+            // Hidden without a voice: the Hearing exercise already explains how to install one.
+            if (speaker != null && speaker.status != VoiceStatus.UNAVAILABLE) {
+                OutlinedButton(
+                    onClick = { speaker.speak(exercise.answer) },
+                    enabled = speaker.status == VoiceStatus.READY,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = content),
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("▶ Hear it") }
+            }
         }
     }
 }

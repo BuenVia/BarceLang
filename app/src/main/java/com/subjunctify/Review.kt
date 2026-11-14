@@ -79,10 +79,17 @@ data class ReviewCard(
 @Entity(tableName = "lesson_round", primaryKeys = ["lessonId", "mode"])
 data class LessonRound(val lessonId: String, val mode: Mode, val completedAt: Long)
 
-/** When each started lesson became started: the moment it had a finished round in every mode. */
+/**
+ * The rounds that start a lesson. Speaking isn't one: not every device can recognise speech, and
+ * lessons started before it existed must stay started.
+ */
+private val STARTING_MODES = setOf(Mode.TRANSLATE, Mode.LISTEN)
+
+/** When each started lesson became started: the moment it had a finished round in every starting mode. */
 fun List<LessonRound>.lessonStartTimes(): Map<String, Instant> =
-    groupBy { it.lessonId }
-        .filterValues { rounds -> rounds.map { it.mode }.toSet().size == Mode.entries.size }
+    filter { it.mode in STARTING_MODES }
+        .groupBy { it.lessonId }
+        .filterValues { rounds -> rounds.map { it.mode }.toSet() == STARTING_MODES }
         .mapValues { (_, rounds) -> Instant.ofEpochMilli(rounds.maxOf { it.completedAt }) }
 
 /** A course's lessons that are finished enough to draw mixed practice from, in teaching order. */

@@ -44,6 +44,18 @@ class ReviewTest {
     }
 
     @Test
+    fun speakingIsNotNeededToStartALessonAndDoesNotMoveItsDate() {
+        val rounds = listOf(
+            LessonRound("lesson", Mode.SPEAK, 3_000),
+            LessonRound("lesson", Mode.LISTEN, 2_000),
+            LessonRound("lesson", Mode.TRANSLATE, 1_000),
+            LessonRound("other", Mode.SPEAK, 1_000),
+            LessonRound("other", Mode.TRANSLATE, 1_000),
+        )
+        assertEquals(mapOf("lesson" to Instant.ofEpochMilli(2_000)), rounds.lessonStartTimes())
+    }
+
+    @Test
     fun onlyStartedLessonsOfTheCourseAreCompleted() {
         val catalan = courses.first { it.language == Language.CATALAN }
         val second = catalan.lessons[1]
