@@ -8,6 +8,7 @@ private const val BASIC_VERBS = "Verbs: Essentials"
 private const val PRESENT = "Verbs: Present"
 private const val NOUNS = "Nouns and adjectives"
 private const val NUMBERS = "Numbers and time"
+private const val POSITION = "Position and order"
 
 private fun ex(id: String, english: String, pattern: String, vararg alsoAccepted: String) =
     Exercise(id, english, pattern, *alsoAccepted)
@@ -265,6 +266,130 @@ val catalanA1Lessons: List<Lesson> = listOf(
             ex("ca-a1-073", "There's a cat in the garden.", "Hi ha un gat al jardí."),
             ex("ca-a1-074", "I don't have time today.", "Avui {|jo }no tinc temps.", "{|Jo }no tinc temps avui."),
             ex("ca-a1-075", "I have to work.", "{|Jo }he de treballar."),
+        ),
+    ),
+    // Lessons 13 and 14 were added later but are taught here; IDs only ever count up, whatever the order.
+    Lesson(
+        id = "ca-a1-lesson-13",
+        title = "Rooms and furniture",
+        level = "A1",
+        category = NOUNS,
+        explanation = """
+            Learn the rooms of a house and what you find in them.
+
+            ## Rooms
+            - **la sala d'estar** or **la sala**: living room
+            - **el dormitori** or **l'habitació**: bedroom
+            - **el menjador**: dining room
+            - **la cuina**: kitchen
+            - **el bany**: bathroom
+
+            ## In the living room
+            **el sofà** (sofa), **la butaca** (armchair), **la televisió** or **la tele** (TV), **el llum** (lamp)
+
+            ## In the bedroom
+            **el llit** (bed), **l'armari** (wardrobe), **la calaixera** (chest of drawers)
+
+            ## In the dining room
+            **la taula** (table), **la cadira** (chair)
+
+            ## In the kitchen
+            **la nevera** (fridge), **el forn** (oven), **la pica** (sink)
+
+            ## In the bathroom
+            **el lavabo** (washbasin), **la dutxa** (shower), **la banyera** (bath), **el vàter** (toilet), **el mirall** (mirror)
+
+            ## Watch out: el lavabo
+            **El lavabo** is the washbasin, but people also use it for the toilet, as in **On és el lavabo?**
+
+            ## Around the house
+            **el pis** (flat), **la finestra** (window), **la porta** (door), **el jardí** (garden), **la terrassa** (terrace)
+
+            ## In a room
+            **a** + **el** becomes **al**:
+            - **al** menjador, **al** bany
+            - **a la** cuina, **a l'**habitació
+        """.trimIndent(),
+        exercises = listOf(
+            ex("ca-a1-181", "There's a sofa in the living room.", "Hi ha un sofà a la sala{ d'estar|}.", "A la sala{ d'estar|} hi ha un sofà."),
+            ex("ca-a1-182", "The television is in the living room.", "La {televisió|tele} és a la sala{ d'estar|}."),
+            ex("ca-a1-183", "The bedroom is very big.", "{El dormitori|L'habitació} és molt gran."),
+            ex("ca-a1-184", "There's a bed and a wardrobe in the bedroom.", "Hi ha un llit i un armari {al dormitori|a l'habitació}.", "{Al dormitori|A l'habitació} hi ha un llit i un armari."),
+            ex("ca-a1-185", "The chest of drawers is new.", "La calaixera és nova."),
+            ex("ca-a1-186", "There are six chairs in the dining room.", "Hi ha sis cadires al menjador.", "Al menjador hi ha sis cadires."),
+            ex("ca-a1-187", "The table and the chairs are old.", "La taula i les cadires són velles."),
+            ex("ca-a1-188", "The bathroom is small.", "El bany és petit."),
+            ex("ca-a1-189", "There's a sink and a mirror in the bathroom.", "Hi ha {un lavabo|una pica} i un mirall al bany.", "Al bany hi ha {un lavabo|una pica} i un mirall."),
+            ex("ca-a1-190", "The kitchen has a big window.", "La cuina té una finestra gran."),
+            ex("ca-a1-191", "There's no fridge in the kitchen.", "No hi ha nevera a la cuina.", "A la cuina no hi ha nevera."),
+            ex("ca-a1-192", "Is there a shower?", "Hi ha {|una }dutxa?"),
+            ex("ca-a1-193", "The flat has two bedrooms and a bathroom.", "El pis té {dos dormitoris|dues habitacions} i un bany."),
+            ex("ca-a1-194", "The sofa is very comfortable.", "El sofà és molt còmode."),
+            ex("ca-a1-195", "The house has a garden and a terrace.", "La casa té un jardí i una terrassa."),
+        ),
+    ),
+    Lesson(
+        id = "ca-a1-lesson-14",
+        title = "Where things are and ordinal numbers",
+        level = "A1",
+        category = POSITION,
+        explanation = """
+            Say where something is, and which one it is in a row.
+
+            ## Where things are
+            - **a sobre de** or **damunt de**: on, on top of
+            - **per sobre de**: above
+            - **sota** or **a sota de**: under, below
+            - **davant de**: in front of
+            - **darrere de**: behind
+            - **al costat de**: next to, beside
+            - **a l'esquerra (de)**: on the left (of)
+            - **a la dreta (de)**: on the right (of)
+
+            ## Use ser
+            Location normally takes **ser**: El gat **és** sota el llit.
+
+            ## de + el becomes del
+            - davant **del** sofà, al costat **del** llit
+            - davant **de la** taula, al costat **de l'**armari
+
+            ## Ordinal numbers
+            |      masc.     fem.
+            | 1st  primer    primera
+            | 2nd  segon     segona
+            | 3rd  tercer    tercera
+            | 4th  quart     quarta
+            | 5th  cinquè    cinquena
+            | 6th  sisè      sisena
+            | 7th  setè      setena
+            | 8th  vuitè     vuitena
+            | 9th  novè      novena
+            | 10th desè      desena
+
+            ## Agreement
+            Ordinals agree with the noun and come before it:
+            - el **primer** pis, la **primera** porta
+            - els **primers** dies, les **primeres** cases
+
+            ## Floors and doors
+            Catalan addresses give the floor and then the door, so **segon primera** (2n 1a) is the second floor, first door. The ground floor is **la planta baixa**.
+        """.trimIndent(),
+        exercises = listOf(
+            ex("ca-a1-196", "The lamp is on top of the chest of drawers.", "{El llum|La làmpada} és {a sobre de|damunt de|a sobre|sobre} la calaixera."),
+            ex("ca-a1-197", "The cat is under the bed.", "El gat {és|està} {sota el|a sota del} llit."),
+            ex("ca-a1-198", "The television is in front of the sofa.", "La {televisió|tele} és davant del sofà."),
+            ex("ca-a1-199", "The garden is behind the house.", "El jardí és darrere {de |}la casa."),
+            ex("ca-a1-200", "The chair is next to the table.", "La cadira és al costat de la taula."),
+            ex("ca-a1-201", "The bathroom is on the left.", "El bany és a l'esquerra."),
+            ex("ca-a1-202", "The wardrobe is to the right of the bed.", "L'armari és a la dreta del llit."),
+            ex("ca-a1-203", "There's a mirror above the sink.", "Hi ha un mirall {a sobre del|per sobre del|damunt del} lavabo."),
+            ex("ca-a1-204", "It's the first door on the left.", "És la primera porta a l'esquerra."),
+            ex("ca-a1-205", "The bathroom is the second door on the right.", "El bany és la segona porta a la dreta."),
+            ex("ca-a1-206", "The office is on the third floor.", "L'oficina és {al tercer pis|a la tercera planta}."),
+            ex("ca-a1-207", "We're on the tenth floor.", "{|Nosaltres }{som|estem} al desè pis.", "{|Nosaltres }{som|estem} a la desena planta."),
+            ex("ca-a1-208", "It's the fifth street on the right.", "És el cinquè carrer a la dreta."),
+            ex("ca-a1-209", "The seventh house is very pretty.", "La setena casa és molt bonica."),
+            ex("ca-a1-210", "This is the ninth time.", "És la novena vegada.", "És el novè cop."),
         ),
     ),
     Lesson(
