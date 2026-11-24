@@ -9,6 +9,7 @@ private const val PRESENT = "Verbs: Present"
 private const val NOUNS = "Nouns and adjectives"
 private const val NUMBERS = "Numbers and time"
 private const val POSITION = "Position and order"
+private const val TOWN = "Around town"
 
 private fun ex(id: String, english: String, pattern: String, vararg alsoAccepted: String) =
     Exercise(id, english, pattern, *alsoAccepted)
@@ -546,6 +547,145 @@ val catalanA1Lessons: List<Lesson> = listOf(
             ex("ca-a1-118", "May I come in?", "Puc entrar?"),
             ex("ca-a1-119", "You (tu) can't park here.", "{|Tu }no pots aparcar aquí."),
             ex("ca-a1-120", "Can you (vosaltres) come tomorrow?", "Podeu venir demà?", "Vosaltres podeu venir demà?"),
+        ),
+    ),
+    // Lessons 15 and 16 were added later. They come after anar, poder and the present tense, which directions need.
+    Lesson(
+        id = "ca-a1-lesson-15",
+        title = "Your street and local services",
+        level = "A1",
+        category = TOWN,
+        explanation = """
+            Describe your street and the places nearby.
+
+            ## In the street
+            - **el carrer**: street
+            - **l'avinguda**: avenue
+            - **la plaça**: square
+            - **la vorera**: pavement
+            - **la cantonada**: corner
+            - **el semàfor**: traffic lights
+            - **el pas de vianants** or **el pas zebra**: pedestrian crossing
+            - **el fanal**: street lamp
+            - **la paperera**: litter bin
+            - **la font**: fountain
+            - **la parada d'autobús**: bus stop
+            - **el barri**: neighbourhood
+
+            ## Shops and services
+            - **la botiga**: shop
+            - **el supermercat**: supermarket
+            - **el forn** or **la fleca**: bakery
+            - **la farmàcia**: pharmacy
+            - **el mercat**: market
+            - **el banc**: bank
+            - **el caixer** or **el caixer automàtic**: cash machine
+            - **Correus**: post office (usually without an article)
+            - **la biblioteca**: library
+            - **l'ajuntament**: town hall
+            - **l'hospital**: hospital
+
+            ## Watch out: el banc
+            **El banc** is a bank, but also a bench in the street or the park.
+
+            ## Describing a street
+            |             masc.      fem.
+            | quiet       tranquil   tranquil·la
+            | noisy       sorollós   sorollosa
+            | wide        ample      ampla
+            | narrow      estret     estreta
+            | clean       net        neta
+            | dirty       brut       bruta
+
+            ## What there is
+            Use **hi ha** for what you find in a street:
+            - **Al meu carrer hi ha** una farmàcia. There's a pharmacy on my street.
+            - **No hi ha** supermercat. There's no supermarket.
+
+            ## Near or far
+            - **a prop (de)**: near (to)
+            - **lluny (de)**: far (from)
+            - **a prop d'aquí**: near here
+        """.trimIndent(),
+        exercises = listOf(
+            ex("ca-a1-211", "There's a pharmacy on my street.", "Al meu carrer hi ha una farmàcia.", "Hi ha una farmàcia al meu carrer."),
+            ex("ca-a1-212", "My street is very quiet.", "El meu carrer és molt tranquil."),
+            ex("ca-a1-213", "The avenue is wide and noisy.", "L'avinguda és ampla i sorollosa."),
+            ex("ca-a1-214", "There are traffic lights on the corner.", "Hi ha un semàfor a la cantonada.", "A la cantonada hi ha un semàfor."),
+            ex("ca-a1-215", "The traffic light is red.", "El semàfor està {en vermell|vermell}.", "El semàfor és vermell."),
+            ex("ca-a1-216", "The bus stop is in front of the bakery.", "La parada {d'autobús|de l'autobús} és davant {del forn|de la fleca}."),
+            ex("ca-a1-217", "Is there a cash machine near here?", "Hi ha un caixer{| automàtic} {a prop d'aquí|per aquí}?"),
+            ex("ca-a1-218", "There's no supermarket in my neighbourhood.", "Al meu barri no hi ha {|cap }supermercat.", "No hi ha {|cap }supermercat al meu barri."),
+            ex("ca-a1-219", "The bank is next to the post office.", "El banc és al costat de {Correus|l'oficina de Correus}."),
+            ex("ca-a1-220", "There's a bench and a fountain in the square.", "A la plaça hi ha un banc i una font.", "Hi ha un banc i una font a la plaça."),
+            ex("ca-a1-221", "There's a pedestrian crossing in front of the school.", "Hi ha un pas {de vianants|zebra} davant de l'escola.", "Davant de l'escola hi ha un pas {de vianants|zebra}."),
+            ex("ca-a1-222", "The market closes on Mondays.", "El mercat tanca els dilluns.", "El mercat tanca el dilluns."),
+            ex("ca-a1-223", "The pavement is very narrow.", "La vorera és molt estreta."),
+            ex("ca-a1-224", "There's a litter bin next to the street lamp.", "Hi ha una paperera al costat del fanal.", "Al costat del fanal hi ha una paperera."),
+            ex("ca-a1-225", "The hospital is far from here.", "L'hospital {és|està} lluny d'aquí."),
+        ),
+    ),
+    Lesson(
+        id = "ca-a1-lesson-16",
+        title = "Asking for and giving directions",
+        level = "A1",
+        category = TOWN,
+        explanation = """
+            Ask the way, and explain how to get somewhere.
+
+            ## Asking the way
+            - **Perdoni, on és** l'estació? Excuse me, where's the station?
+            - **Com puc anar a** la platja? How can I get to the beach?
+            - **Hi ha** una farmàcia **per aquí**? Is there a pharmacy around here?
+            - **És lluny?** Is it far?
+
+            ## How far it is
+            - **És a prop.** It's near.
+            - **És a cinc minuts a peu.** It's five minutes' walk.
+
+            ## Directions in the present tense
+            The easiest way to give directions is the present tense:
+            - **Vas tot recte.** You go straight ahead. (**tot dret** is also common)
+            - **Agafes** el primer carrer. You take the first street.
+            - **Gires a la dreta.** You turn right.
+            - **Travesses** la plaça. You cross the square.
+            - **Segueixes** or **continues fins al** semàfor. You carry on as far as the traffic lights.
+
+            ## Left and right
+            **a la dreta** or **a mà dreta**: on the right
+            **a l'esquerra** or **a mà esquerra**: on the left
+
+            ## You'll also hear commands
+            |             tu          vostè
+            | girar       gira        giri
+            | agafar      agafa       agafi
+            | travessar   travessa    travessi
+            | seguir      segueix     segueixi
+            | continuar   continua    continuï
+            | anar        ves         vagi
+
+            ## Useful places to mention
+            - **al final del carrer**: at the end of the street
+            - **a la cantonada**: on the corner
+            - **davant de**: opposite, in front of
+            - **l'església**: church, **el museu**: museum, **l'estació**: station
+        """.trimIndent(),
+        exercises = listOf(
+            ex("ca-a1-226", "Excuse me (vostè), is there a pharmacy near here?", "Perdoni, hi ha una farmàcia {a prop d'aquí|per aquí}?"),
+            ex("ca-a1-227", "How can I get to the station?", "Com {puc anar|puc arribar|vaig} a l'estació?"),
+            ex("ca-a1-228", "Is it far?", "És lluny?", "Està lluny?"),
+            ex("ca-a1-229", "No, it's very near.", "No, {és|està} molt a prop."),
+            ex("ca-a1-230", "It's five minutes' walk.", "{És|Està} a cinc minuts {a peu|caminant}."),
+            ex("ca-a1-231", "You (tu) go straight ahead.", "{|Tu }vas tot {recte|dret}.", "{Ves|Vés} tot {recte|dret}."),
+            ex("ca-a1-232", "You (tu) take the second street on the left.", "{Agafes|Agafa} el segon carrer a {l'esquerra|mà esquerra}."),
+            ex("ca-a1-233", "You (tu) turn right at the traffic lights.", "{Gires|Gira} a {la dreta|mà dreta} al semàfor.", "Al semàfor, {gires|gira} a {la dreta|mà dreta}."),
+            ex("ca-a1-234", "You (vostè) cross the square.", "{|Vostè }travessa la plaça.", "Travessi la plaça."),
+            ex("ca-a1-235", "You (vostè) carry on to the end of the street.", "{|Vostè }{segueix|continua} fins al final del carrer.", "{Segueixi|Continuï} fins al final del carrer."),
+            ex("ca-a1-236", "Turn (vostè) left at the corner.", "Giri a {l'esquerra|mà esquerra} a la cantonada.", "A la cantonada, giri a {l'esquerra|mà esquerra}."),
+            ex("ca-a1-237", "Take (tu) the first street on the right.", "Agafa el primer carrer a {la dreta|mà dreta}."),
+            ex("ca-a1-238", "The bank is opposite the church.", "El banc és {davant|al davant} de l'església."),
+            ex("ca-a1-239", "The museum is at the end of this street.", "El museu és al final d'aquest carrer."),
+            ex("ca-a1-240", "Go (tu) as far as the square and turn left.", "{Ves|Vés} fins a la plaça i gira a {l'esquerra|mà esquerra}."),
         ),
     ),
     Lesson(
