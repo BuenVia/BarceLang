@@ -28,6 +28,13 @@ class ReviewTest {
     }
 
     @Test
+    fun speakingCardsAreNotReviewed() {
+        val course = courses.first { exerciseId in it.exerciseIds }
+        val cards = listOf(newCard, ReviewCard(exerciseId, Mode.LISTEN), ReviewCard(exerciseId, Mode.SPEAK))
+        assertEquals(listOf(Mode.TRANSLATE, Mode.LISTEN), cards.inCourse(course).map { it.mode })
+    }
+
+    @Test
     fun aLessonWithOneModeFinishedIsNotStarted() {
         val rounds = listOf(LessonRound("lesson", Mode.TRANSLATE, 1_000))
         assertEquals(emptyMap<String, Instant>(), rounds.lessonStartTimes())

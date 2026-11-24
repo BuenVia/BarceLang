@@ -523,8 +523,7 @@ private fun ReviewPanel(
     val now = currentTime()
     val translateDue = cards.due(Mode.TRANSLATE, now).size
     val listenDue = cards.due(Mode.LISTEN, now).size
-    val speakDue = cards.due(Mode.SPEAK, now).size
-    val totalDue = translateDue + listenDue + speakDue
+    val totalDue = translateDue + listenDue
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -549,12 +548,6 @@ private fun ReviewPanel(
                             onClick = { onReview(Mode.LISTEN, cards.nextSession(Mode.LISTEN, now)) },
                             modifier = Modifier.fillMaxWidth(),
                         ) { Text("Transcribe ${course.language.displayName} ($listenDue)") }
-                    }
-                    if (speakDue > 0) {
-                        OutlinedButton(
-                            onClick = { onReview(Mode.SPEAK, cards.nextSession(Mode.SPEAK, now)) },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Speak ${course.language.displayName} ($speakDue)") }
                     }
                 }
                 cards.isNotEmpty() -> Text(

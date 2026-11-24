@@ -96,8 +96,15 @@ fun List<LessonRound>.lessonStartTimes(): Map<String, Instant> =
 fun Course.completedLessons(startTimes: Map<String, Instant>): List<Lesson> =
     lessons.filter { it.id in startTimes }
 
+/**
+ * The modes that are scheduled for review. Speaking is practice only: cards for it saved before
+ * this stay in the database but are ignored.
+ */
+val REVIEWED_MODES = setOf(Mode.TRANSLATE, Mode.LISTEN)
+
+/** The cards to review for [course]: its sentences, in the modes that are reviewed. */
 fun List<ReviewCard>.inCourse(course: Course): List<ReviewCard> =
-    filter { it.exerciseId in course.exerciseIds }
+    filter { it.exerciseId in course.exerciseIds && it.mode in REVIEWED_MODES }
 
 fun List<ReviewCard>.due(mode: Mode, now: Instant): List<ReviewCard> =
     filter { it.mode == mode && it.dueAt <= now.toEpochMilli() }

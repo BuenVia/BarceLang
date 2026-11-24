@@ -121,7 +121,9 @@ class ReviewStore private constructor(context: Context) {
     val cards: Flow<List<ReviewCard>> = dao.observeAll()
     val lessonRounds: Flow<List<LessonRound>> = roundDao.observeAll()
 
+    /** Does nothing for a mode that isn't reviewed. */
     fun recordAnswer(exerciseId: String, mode: Mode, passed: Boolean) {
+        if (mode !in REVIEWED_MODES) return
         val now = Instant.now()
         val zone = ZoneId.systemDefault()
         writes.launch { dao.recordAnswer(exerciseId, mode, passed, now, zone) }
