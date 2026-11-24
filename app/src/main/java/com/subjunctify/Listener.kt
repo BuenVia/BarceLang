@@ -80,7 +80,7 @@ class Listener(context: Context, private val language: Language, private val onH
         )
     }
 
-    /** Stops listening early. What was heard so far still arrives as an answer. */
+    /** Stops listening early. What was heard so far still arrives, to be submitted or recorded again. */
     fun stop() = recognizer.stopListening()
 
     fun shutdown() = recognizer.destroy()

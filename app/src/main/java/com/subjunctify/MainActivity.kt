@@ -672,6 +672,8 @@ private fun PracticeScreen(
     var score by rememberSaveable { mutableIntStateOf(0) }
     var answer by rememberSaveable { mutableStateOf("") }
     var verdict by rememberSaveable { mutableStateOf<Verdict?>(null) }
+    // The recogniser's guesses at the last spoken attempt, best first, waiting to be submitted.
+    var spoken by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
 
     // Saved as a seed so that rotating the screen keeps the order, and with it the place in the round.
     var shuffleSeed by rememberSaveable { mutableLongStateOf(Random.nextLong()) }
@@ -723,10 +725,10 @@ private fun PracticeScreen(
         }
     }
     // Shows the guess that passed, or otherwise the recogniser's best one.
-    val submitSpoken = { heard: List<String> ->
-        if (verdict == null) {
-            val result = exercise.checkSpoken(heard)
-            answer = heard.firstOrNull { exercise.checkSpoken(listOf(it)) == Verdict.CORRECT } ?: heard.first()
+    val submitSpoken = {
+        if (spoken.isNotEmpty() && verdict == null) {
+            val result = exercise.checkSpoken(spoken)
+            answer = spoken.firstOrNull { exercise.checkSpoken(listOf(it)) == Verdict.CORRECT } ?: spoken.first()
             grade(result)
         }
     }
@@ -759,7 +761,14 @@ private fun PracticeScreen(
                 Mode.LISTEN -> ListenPrompt(exercise, language, autoPlay = verdict == null)
                 // A fresh listener for each sentence, so a problem with the last one doesn't linger.
                 Mode.SPEAK -> key(exercise.id) {
-                    SpeakPrompt(exercise, language, answered = verdict != null, onHeard = submitSpoken)
+                    SpeakPrompt(
+                        exercise,
+                        language,
+                        answered = verdict != null,
+                        heard = spoken.firstOrNull(),
+                        onListen = { spoken = emptyList() },
+                        onHeard = { spoken = it },
+                    )
                 }
             }
 
@@ -782,17 +791,22 @@ private fun PracticeScreen(
 
             val result = verdict
             if (result == null) {
-                if (mode != Mode.SPEAK) Button(
-                    onClick = submit,
-                    enabled = answer.isNotBlank(),
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("Submit") }
+                if (mode == Mode.SPEAK) {
+                    if (spoken.isNotEmpty()) Button(onClick = submitSpoken, Modifier.fillMaxWidth()) { Text("Submit") }
+                } else {
+                    Button(
+                        onClick = submit,
+                        enabled = answer.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Submit") }
+                }
             } else {
                 Feedback(result, exercise, heard = answer.takeIf { mode == Mode.SPEAK }, speaker = speaker)
                 Button(
                     onClick = {
                         index++
                         answer = ""
+                        spoken = emptyList()
                         verdict = null
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -852,8 +866,19 @@ private fun ListenPrompt(exercise: Exercise, language: Language, autoPlay: Boole
     }
 }
 
+/**
+ * [heard] is the best guess at the last attempt, shown so it can be checked before submitting, or
+ * recorded again. [onListen] is called as each new attempt starts, and [onHeard] once it's heard.
+ */
 @Composable
-private fun SpeakPrompt(exercise: Exercise, language: Language, answered: Boolean, onHeard: (List<String>) -> Unit) {
+private fun SpeakPrompt(
+    exercise: Exercise,
+    language: Language,
+    answered: Boolean,
+    heard: String?,
+    onListen: () -> Unit,
+    onHeard: (List<String>) -> Unit,
+) {
     val context = LocalContext.current
     val available = remember { canRecognizeSpeech(context) }
     val currentOnHeard by rememberUpdatedState(onHeard)
@@ -865,10 +890,14 @@ private fun SpeakPrompt(exercise: Exercise, language: Language, answered: Boolea
     var permissionDenied by remember { mutableStateOf(false) }
     val requestPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         permissionDenied = !granted
-        if (granted) listener.start()
+        if (granted) {
+            onListen()
+            listener.start()
+        }
     }
     val startListening = {
         if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            onListen()
             listener.start()
         } else {
             requestPermission.launch(Manifest.permission.RECORD_AUDIO)
@@ -899,7 +928,12 @@ private fun SpeakPrompt(exercise: Exercise, language: Language, answered: Boolea
                         listener.problem
                     }
                     problem?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                    Button(onClick = startListening, Modifier.fillMaxWidth()) { Text("🎤 Speak") }
+                    if (heard != null) {
+                        Text("Heard: “$heard”", style = MaterialTheme.typography.bodyLarge)
+                        OutlinedButton(onClick = startListening, Modifier.fillMaxWidth()) { Text("🎤 Re-record") }
+                    } else {
+                        Button(onClick = startListening, Modifier.fillMaxWidth()) { Text("🎤 Speak") }
+                    }
                 }
             }
         }
